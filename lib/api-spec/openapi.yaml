@@ -3,13 +3,40 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: CryptoCore Trading Platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: dashboard
+    description: Dashboard and overview data
+  - name: exchanges
+    description: Exchange status and management
+  - name: positions
+    description: Open and closed positions
+  - name: orders
+    description: Order management
+  - name: signals
+    description: Trading signals
+  - name: trades
+    description: Trade history
+  - name: risk
+    description: Risk management
+  - name: guardian
+    description: Guardian monitoring
+  - name: audit
+    description: Audit log
+  - name: market
+    description: Market data overview
+  - name: settings
+    description: Platform settings
+  - name: logs
+    description: System logs
+
 paths:
   /healthz:
     get:
@@ -24,6 +51,514 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "409":
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout user
+      responses:
+        "200":
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard summary
+      description: Returns balances, PnL, exposure, and system status overview
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/pnl-chart:
+    get:
+      operationId: getPnlChart
+      tags: [dashboard]
+      summary: Get PnL chart data
+      parameters:
+        - in: query
+          name: period
+          schema:
+            type: string
+            enum: [1d, 7d, 30d, 90d]
+            default: 7d
+      responses:
+        "200":
+          description: PnL chart data points
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PnlDataPoint"
+
+  /exchanges:
+    get:
+      operationId: getExchanges
+      tags: [exchanges]
+      summary: Get all exchanges
+      responses:
+        "200":
+          description: List of exchanges
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Exchange"
+
+  /exchanges/{id}:
+    get:
+      operationId: getExchange
+      tags: [exchanges]
+      summary: Get exchange by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Exchange details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Exchange"
+
+  /positions:
+    get:
+      operationId: getPositions
+      tags: [positions]
+      summary: Get positions
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [open, closed, all]
+            default: open
+        - in: query
+          name: exchange
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: List of positions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedPositions"
+
+  /positions/summary:
+    get:
+      operationId: getPositionsSummary
+      tags: [positions]
+      summary: Get positions summary
+      description: Aggregated position data including total exposure and unrealized PnL
+      responses:
+        "200":
+          description: Positions summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PositionsSummary"
+
+  /orders:
+    get:
+      operationId: getOrders
+      tags: [orders]
+      summary: Get orders
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, filled, cancelled, all]
+            default: all
+        - in: query
+          name: exchange
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedOrders"
+
+  /signals:
+    get:
+      operationId: getSignals
+      tags: [signals]
+      summary: Get trading signals
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [active, inactive, all]
+            default: all
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: List of signals
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedSignals"
+
+  /signals/stats:
+    get:
+      operationId: getSignalsStats
+      tags: [signals]
+      summary: Get signals performance statistics
+      responses:
+        "200":
+          description: Signal performance stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignalsStats"
+
+  /trades:
+    get:
+      operationId: getTrades
+      tags: [trades]
+      summary: Get trade history
+      parameters:
+        - in: query
+          name: exchange
+          schema:
+            type: string
+        - in: query
+          name: symbol
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: List of trades
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedTrades"
+
+  /trades/stats:
+    get:
+      operationId: getTradesStats
+      tags: [trades]
+      summary: Get trade statistics
+      responses:
+        "200":
+          description: Trade statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradesStats"
+
+  /risk/metrics:
+    get:
+      operationId: getRiskMetrics
+      tags: [risk]
+      summary: Get risk metrics
+      responses:
+        "200":
+          description: Current risk metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskMetrics"
+
+  /risk/limits:
+    get:
+      operationId: getRiskLimits
+      tags: [risk]
+      summary: Get risk limits
+      responses:
+        "200":
+          description: Configured risk limits
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskLimits"
+    put:
+      operationId: updateRiskLimits
+      tags: [risk]
+      summary: Update risk limits
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RiskLimitsUpdate"
+      responses:
+        "200":
+          description: Updated risk limits
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskLimits"
+
+  /guardian/state:
+    get:
+      operationId: getGuardianState
+      tags: [guardian]
+      summary: Get guardian monitoring state
+      responses:
+        "200":
+          description: Guardian state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GuardianState"
+
+  /guardian/kill-switch:
+    post:
+      operationId: triggerKillSwitch
+      tags: [guardian]
+      summary: Trigger kill switch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KillSwitchRequest"
+      responses:
+        "200":
+          description: Kill switch triggered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GuardianState"
+
+  /audit:
+    get:
+      operationId: getAuditLog
+      tags: [audit]
+      summary: Get audit log entries
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+        - in: query
+          name: severity
+          schema:
+            type: string
+            enum: [info, warning, error, critical]
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 100
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedAuditEntries"
+
+  /market/overview:
+    get:
+      operationId: getMarketOverview
+      tags: [market]
+      summary: Get market overview
+      description: Market data from Yahoo Finance partner feed
+      responses:
+        "200":
+          description: Market overview data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketOverview"
+
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get platform settings
+      responses:
+        "200":
+          description: Platform settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformSettings"
+    put:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update platform settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlatformSettingsUpdate"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformSettings"
+
+  /logs:
+    get:
+      operationId: getSystemLogs
+      tags: [logs]
+      summary: Get system logs
+      parameters:
+        - in: query
+          name: level
+          schema:
+            type: string
+            enum: [debug, info, warn, error]
+        - in: query
+          name: source
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 100
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: System log entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedSystemLogs"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +569,979 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        name:
+          type: string
+      required:
+        - email
+        - password
+        - name
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        token:
+          type: string
+      required:
+        - user
+        - token
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [admin, trader, viewer]
+        onboardingCompleted:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - email
+        - name
+        - role
+        - onboardingCompleted
+        - createdAt
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalBalance:
+          type: number
+        availableBalance:
+          type: number
+        totalExposure:
+          type: number
+        exposurePercent:
+          type: number
+        realizedPnl:
+          type: number
+        unrealizedPnl:
+          type: number
+        dailyPnl:
+          type: number
+        dailyPnlPercent:
+          type: number
+        totalPositions:
+          type: integer
+        openOrders:
+          type: integer
+        systemStatus:
+          type: string
+          enum: [operational, degraded, halted, disconnected]
+        guardianActive:
+          type: boolean
+        killSwitchActive:
+          type: boolean
+        routingMode:
+          type: string
+          enum: [auto, manual, disabled]
+        exchangesSummary:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExchangeSummary"
+        lastUpdated:
+          type: string
+          format: date-time
+      required:
+        - totalBalance
+        - availableBalance
+        - totalExposure
+        - exposurePercent
+        - realizedPnl
+        - unrealizedPnl
+        - dailyPnl
+        - dailyPnlPercent
+        - totalPositions
+        - openOrders
+        - systemStatus
+        - guardianActive
+        - killSwitchActive
+        - routingMode
+        - exchangesSummary
+        - lastUpdated
+
+    ExchangeSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum: [connected, disconnected, degraded, maintenance]
+        balance:
+          type: number
+        isPrimary:
+          type: boolean
+      required:
+        - id
+        - name
+        - status
+        - balance
+        - isPrimary
+
+    PnlDataPoint:
+      type: object
+      properties:
+        date:
+          type: string
+        realizedPnl:
+          type: number
+        unrealizedPnl:
+          type: number
+        cumulativePnl:
+          type: number
+      required:
+        - date
+        - realizedPnl
+        - unrealizedPnl
+        - cumulativePnl
+
+    Exchange:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [crypto, broker, market-data, education]
+        status:
+          type: string
+          enum: [connected, disconnected, degraded, maintenance]
+        balance:
+          type: number
+        availableBalance:
+          type: number
+        isPrimary:
+          type: boolean
+        isActive:
+          type: boolean
+        apiStatus:
+          type: string
+          enum: [ok, slow, error, disabled]
+        latencyMs:
+          type: integer
+        role:
+          type: string
+          enum: [execution, broker, market-data, education]
+        lastSync:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          additionalProperties: true
+      required:
+        - id
+        - name
+        - type
+        - status
+        - balance
+        - availableBalance
+        - isPrimary
+        - isActive
+        - apiStatus
+        - latencyMs
+        - role
+        - lastSync
+
+    Position:
+      type: object
+      properties:
+        id:
+          type: string
+        symbol:
+          type: string
+        exchange:
+          type: string
+        side:
+          type: string
+          enum: [long, short]
+        size:
+          type: number
+        entryPrice:
+          type: number
+        currentPrice:
+          type: number
+        unrealizedPnl:
+          type: number
+        unrealizedPnlPercent:
+          type: number
+        leverage:
+          type: number
+        margin:
+          type: number
+        status:
+          type: string
+          enum: [open, closed]
+        openedAt:
+          type: string
+          format: date-time
+        closedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - id
+        - symbol
+        - exchange
+        - side
+        - size
+        - entryPrice
+        - currentPrice
+        - unrealizedPnl
+        - unrealizedPnlPercent
+        - leverage
+        - margin
+        - status
+        - openedAt
+
+    PaginatedPositions:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Position"
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+      required:
+        - data
+        - total
+        - limit
+        - offset
+
+    PositionsSummary:
+      type: object
+      properties:
+        totalOpenPositions:
+          type: integer
+        totalExposure:
+          type: number
+        totalUnrealizedPnl:
+          type: number
+        byExchange:
+          type: array
+          items:
+            type: object
+            properties:
+              exchange:
+                type: string
+              count:
+                type: integer
+              exposure:
+                type: number
+            required:
+              - exchange
+              - count
+              - exposure
+        bySymbol:
+          type: array
+          items:
+            type: object
+            properties:
+              symbol:
+                type: string
+              count:
+                type: integer
+              pnl:
+                type: number
+            required:
+              - symbol
+              - count
+              - pnl
+      required:
+        - totalOpenPositions
+        - totalExposure
+        - totalUnrealizedPnl
+        - byExchange
+        - bySymbol
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+        symbol:
+          type: string
+        exchange:
+          type: string
+        type:
+          type: string
+          enum: [market, limit, stop, stop-limit]
+        side:
+          type: string
+          enum: [buy, sell]
+        quantity:
+          type: number
+        price:
+          type: number
+          nullable: true
+        filledQuantity:
+          type: number
+        status:
+          type: string
+          enum: [pending, filled, partially_filled, cancelled, rejected]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - symbol
+        - exchange
+        - type
+        - side
+        - quantity
+        - filledQuantity
+        - status
+        - createdAt
+        - updatedAt
+
+    PaginatedOrders:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+      required:
+        - data
+        - total
+        - limit
+        - offset
+
+    Signal:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        symbol:
+          type: string
+        exchange:
+          type: string
+        direction:
+          type: string
+          enum: [long, short, neutral]
+        confidence:
+          type: number
+        strength:
+          type: string
+          enum: [weak, moderate, strong]
+        status:
+          type: string
+          enum: [active, inactive, expired]
+        source:
+          type: string
+        entryZone:
+          type: number
+        targetPrice:
+          type: number
+        stopLoss:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - id
+        - name
+        - symbol
+        - exchange
+        - direction
+        - confidence
+        - strength
+        - status
+        - source
+        - entryZone
+        - targetPrice
+        - stopLoss
+        - createdAt
+
+    PaginatedSignals:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Signal"
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+      required:
+        - data
+        - total
+        - limit
+        - offset
+
+    SignalsStats:
+      type: object
+      properties:
+        totalSignals:
+          type: integer
+        activeSignals:
+          type: integer
+        winRate:
+          type: number
+        avgConfidence:
+          type: number
+        byDirection:
+          type: object
+          properties:
+            long:
+              type: integer
+            short:
+              type: integer
+            neutral:
+              type: integer
+          required:
+            - long
+            - short
+            - neutral
+      required:
+        - totalSignals
+        - activeSignals
+        - winRate
+        - avgConfidence
+        - byDirection
+
+    Trade:
+      type: object
+      properties:
+        id:
+          type: string
+        symbol:
+          type: string
+        exchange:
+          type: string
+        side:
+          type: string
+          enum: [buy, sell]
+        quantity:
+          type: number
+        entryPrice:
+          type: number
+        exitPrice:
+          type: number
+          nullable: true
+        realizedPnl:
+          type: number
+          nullable: true
+        fee:
+          type: number
+        status:
+          type: string
+          enum: [open, closed, cancelled]
+        openedAt:
+          type: string
+          format: date-time
+        closedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - id
+        - symbol
+        - exchange
+        - side
+        - quantity
+        - entryPrice
+        - fee
+        - status
+        - openedAt
+
+    PaginatedTrades:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Trade"
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+      required:
+        - data
+        - total
+        - limit
+        - offset
+
+    TradesStats:
+      type: object
+      properties:
+        totalTrades:
+          type: integer
+        winningTrades:
+          type: integer
+        losingTrades:
+          type: integer
+        winRate:
+          type: number
+        totalRealizedPnl:
+          type: number
+        avgTradeReturn:
+          type: number
+        bestTrade:
+          type: number
+        worstTrade:
+          type: number
+        totalFees:
+          type: number
+      required:
+        - totalTrades
+        - winningTrades
+        - losingTrades
+        - winRate
+        - totalRealizedPnl
+        - avgTradeReturn
+        - bestTrade
+        - worstTrade
+        - totalFees
+
+    RiskMetrics:
+      type: object
+      properties:
+        portfolioVaR:
+          type: number
+        maxDrawdown:
+          type: number
+        currentDrawdown:
+          type: number
+        sharpeRatio:
+          type: number
+        beta:
+          type: number
+        correlationBTC:
+          type: number
+        concentrationRisk:
+          type: number
+        liquidityScore:
+          type: number
+        overallRiskLevel:
+          type: string
+          enum: [low, moderate, elevated, high, critical]
+        alerts:
+          type: array
+          items:
+            $ref: "#/components/schemas/RiskAlert"
+      required:
+        - portfolioVaR
+        - maxDrawdown
+        - currentDrawdown
+        - sharpeRatio
+        - beta
+        - correlationBTC
+        - concentrationRisk
+        - liquidityScore
+        - overallRiskLevel
+        - alerts
+
+    RiskAlert:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        message:
+          type: string
+        severity:
+          type: string
+          enum: [info, warning, critical]
+        triggeredAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - type
+        - message
+        - severity
+        - triggeredAt
+
+    RiskLimits:
+      type: object
+      properties:
+        maxPositionSize:
+          type: number
+        maxDailyLoss:
+          type: number
+        maxDrawdown:
+          type: number
+        maxLeverage:
+          type: number
+        maxExposurePercent:
+          type: number
+        maxConcentrationPercent:
+          type: number
+      required:
+        - maxPositionSize
+        - maxDailyLoss
+        - maxDrawdown
+        - maxLeverage
+        - maxExposurePercent
+        - maxConcentrationPercent
+
+    RiskLimitsUpdate:
+      type: object
+      properties:
+        maxPositionSize:
+          type: number
+        maxDailyLoss:
+          type: number
+        maxDrawdown:
+          type: number
+        maxLeverage:
+          type: number
+        maxExposurePercent:
+          type: number
+        maxConcentrationPercent:
+          type: number
+
+    GuardianState:
+      type: object
+      properties:
+        isActive:
+          type: boolean
+        killSwitchActive:
+          type: boolean
+        killSwitchReason:
+          type: string
+          nullable: true
+        killSwitchTriggeredAt:
+          type: string
+          format: date-time
+          nullable: true
+        monitoringChecks:
+          type: array
+          items:
+            $ref: "#/components/schemas/GuardianCheck"
+        lastHeartbeat:
+          type: string
+          format: date-time
+        uptimeSeconds:
+          type: integer
+        alertsTriggered:
+          type: integer
+      required:
+        - isActive
+        - killSwitchActive
+        - monitoringChecks
+        - lastHeartbeat
+        - uptimeSeconds
+        - alertsTriggered
+
+    GuardianCheck:
+      type: object
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+          enum: [passing, warning, failing]
+        message:
+          type: string
+        lastChecked:
+          type: string
+          format: date-time
+      required:
+        - name
+        - status
+        - message
+        - lastChecked
+
+    KillSwitchRequest:
+      type: object
+      properties:
+        activate:
+          type: boolean
+        reason:
+          type: string
+      required:
+        - activate
+        - reason
+
+    AuditEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        category:
+          type: string
+        action:
+          type: string
+        actor:
+          type: string
+        target:
+          type: string
+          nullable: true
+        severity:
+          type: string
+          enum: [info, warning, error, critical]
+        details:
+          type: object
+          additionalProperties: true
+      required:
+        - id
+        - timestamp
+        - category
+        - action
+        - actor
+        - severity
+
+    PaginatedAuditEntries:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditEntry"
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+      required:
+        - data
+        - total
+        - limit
+        - offset
+
+    MarketOverview:
+      type: object
+      properties:
+        btcPrice:
+          type: number
+        btcChange24h:
+          type: number
+        ethPrice:
+          type: number
+        ethChange24h:
+          type: number
+        totalMarketCap:
+          type: number
+        totalVolume24h:
+          type: number
+        fearGreedIndex:
+          type: integer
+        fearGreedLabel:
+          type: string
+        dominanceBTC:
+          type: number
+        topMovers:
+          type: array
+          items:
+            $ref: "#/components/schemas/MarketMover"
+        dataSource:
+          type: string
+        lastUpdated:
+          type: string
+          format: date-time
+      required:
+        - btcPrice
+        - btcChange24h
+        - ethPrice
+        - ethChange24h
+        - totalMarketCap
+        - totalVolume24h
+        - fearGreedIndex
+        - fearGreedLabel
+        - dominanceBTC
+        - topMovers
+        - dataSource
+        - lastUpdated
+
+    MarketMover:
+      type: object
+      properties:
+        symbol:
+          type: string
+        price:
+          type: number
+        change24h:
+          type: number
+        volume:
+          type: number
+      required:
+        - symbol
+        - price
+        - change24h
+        - volume
+
+    PlatformSettings:
+      type: object
+      properties:
+        routingMode:
+          type: string
+          enum: [auto, manual, disabled]
+        defaultLeverage:
+          type: number
+        reconciliationInterval:
+          type: integer
+        guardianHeartbeatInterval:
+          type: integer
+        notificationsEnabled:
+          type: boolean
+        emailAlerts:
+          type: boolean
+        auditRetentionDays:
+          type: integer
+        theme:
+          type: string
+          enum: [light, dark, system]
+        timezone:
+          type: string
+      required:
+        - routingMode
+        - defaultLeverage
+        - reconciliationInterval
+        - guardianHeartbeatInterval
+        - notificationsEnabled
+        - emailAlerts
+        - auditRetentionDays
+        - theme
+        - timezone
+
+    PlatformSettingsUpdate:
+      type: object
+      properties:
+        routingMode:
+          type: string
+          enum: [auto, manual, disabled]
+        defaultLeverage:
+          type: number
+        reconciliationInterval:
+          type: integer
+        guardianHeartbeatInterval:
+          type: integer
+        notificationsEnabled:
+          type: boolean
+        emailAlerts:
+          type: boolean
+        auditRetentionDays:
+          type: integer
+        theme:
+          type: string
+          enum: [light, dark, system]
+        timezone:
+          type: string
+
+    SystemLog:
+      type: object
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        level:
+          type: string
+          enum: [debug, info, warn, error]
+        source:
+          type: string
+        message:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+      required:
+        - id
+        - timestamp
+        - level
+        - source
+        - message
+
+    PaginatedSystemLogs:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/SystemLog"
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+      required:
+        - data
+        - total
+        - limit
+        - offset

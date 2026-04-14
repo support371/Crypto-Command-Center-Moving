@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "CryptoCore Trading Platform"
+version = "1.0.0"
+id = "artifacts/crypto-platform"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24040
+
+[services.development]
+run = "pnpm --filter @workspace/crypto-platform run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/crypto-platform", "run", "build" ]
+publicDir = "artifacts/crypto-platform/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24040"
+BASE_PATH = "/"
