@@ -102,53 +102,115 @@ function GuardianCheckIcon({ status }: { status: string }) {
   return <XCircle className="h-4 w-4 text-red-400" />;
 }
 
+function SystemStatusBanner({ summary, isError, isLoading }: {
+  summary: any;
+  isError: boolean;
+  isLoading: boolean;
+}) {
+  if (isLoading) return null;
+
+  if (isError) {
+    return (
+      <div className="flex items-center gap-3 px-4 py-2 bg-red-500/10 border border-red-500/30 rounded-lg">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+          <span className="text-xs font-bold tracking-widest text-red-400 uppercase">DISCONNECTED</span>
+        </span>
+        <span className="text-xs text-red-400/80">Cannot reach API server — displaying last known state</span>
+      </div>
+    );
+  }
+
+  if (!summary) return null;
+
+  const isKillSwitchActive = summary.killSwitchActive;
+  const status = summary.systemStatus;
+
+  if (isKillSwitchActive) {
+    return (
+      <div className="flex items-center gap-3 px-4 py-2 bg-red-500/10 border border-red-500/30 rounded-lg">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-red-500" />
+          <span className="text-xs font-bold tracking-widest text-red-400 uppercase">KILL SWITCH ACTIVE</span>
+        </span>
+        <span className="text-xs text-red-400/80">All trading halted across BTCC and Bitget</span>
+      </div>
+    );
+  }
+
+  if (status === "degraded") {
+    return (
+      <div className="flex items-center gap-3 px-4 py-2 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+          <span className="text-xs font-bold tracking-widest text-amber-400 uppercase">DEGRADED</span>
+        </span>
+        <span className="text-xs text-amber-400/80">One or more systems are operating at reduced capacity</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+      <span className="inline-flex items-center gap-1.5">
+        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+        <span className="text-xs font-bold tracking-widest text-emerald-400 uppercase">LIVE</span>
+      </span>
+      <span className="text-xs text-emerald-400/80">
+        All systems operational · {summary.lastUpdated ? `Updated ${new Date(summary.lastUpdated).toLocaleTimeString()}` : ""}
+      </span>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const queryClient = useQueryClient();
   const [chartPeriod, setChartPeriod] = useState<"1d" | "7d" | "30d" | "90d">("7d");
 
-  const { data: summary, isLoading: summaryLoading } = useGetDashboardSummary();
+  const { data: summary, isLoading: summaryLoading, isError: summaryError } = useGetDashboardSummary();
   const { data: chartData } = useGetPnlChart({ period: chartPeriod });
-  const { data: positions } = useGetPositions({ status: "open", limit: 5 });
+  const { data: positions, isError: positionsError } = useGetPositions({ status: "open", limit: 5 });
   const { data: orders } = useGetOrders({ limit: 5 });
-  const { data: guardian } = useGetGuardianState();
+  const { data: guardian, isError: guardianError } = useGetGuardianState();
   const { data: auditLog } = useGetAuditLog({ limit: 5 });
   const { data: market } = useGetMarketOverview();
 
   const killSwitchMutation = useTriggerKillSwitch();
 
   const handleKillSwitch = async (activate: boolean) => {
-    await killSwitchMutation.mutateAsync({
-      data: {
-        activate,
-        reason: activate ? "Manual kill switch triggered by operator" : "Kill switch deactivated by operator",
-      },
-    });
-    queryClient.invalidateQueries({ queryKey: getGetGuardianStateQueryKey() });
-    queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
+    try {
+      await killSwitchMutation.mutateAsync({
+        data: {
+          activate,
+          reason: activate ? "Manual kill switch triggered by operator" : "Kill switch deactivated by operator",
+        },
+      });
+      queryClient.invalidateQueries({ queryKey: getGetGuardianStateQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
+    } catch (err) {
+      console.error("Kill switch operation failed:", err);
+    }
   };
 
   return (
     <AppLayout>
       <div className="space-y-6">
-        {/* Kill Switch Banner */}
+
+        {/* System Status Banner */}
+        <SystemStatusBanner summary={summary} isError={summaryError} isLoading={summaryLoading} />
+
+        {/* Kill Switch Active Banner */}
         {summary?.killSwitchActive && (
           <Alert className="border-destructive/50 bg-destructive/10">
             <AlertTriangle className="h-4 w-4 text-destructive" />
-            <AlertDescription className="text-destructive flex items-center justify-between">
-              <span>
-                <strong>KILL SWITCH ACTIVE</strong> — All trading halted.{" "}
-                {guardian?.killSwitchReason && <span className="ml-1 opacity-80">{guardian.killSwitchReason}</span>}
-                {guardian?.killSwitchTriggeredAt && (
-                  <span className="ml-2 text-xs opacity-70">
-                    {new Date(guardian.killSwitchTriggeredAt).toLocaleTimeString()}
-                  </span>
-                )}
-              </span>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className="border-destructive/50 text-destructive hover:bg-destructive/10">
-                  Deactivate
-                </Button>
-              </AlertDialogTrigger>
+            <AlertDescription className="text-destructive">
+              <strong>KILL SWITCH ACTIVE</strong> — All trading halted.{" "}
+              {guardian?.killSwitchReason && <span className="ml-1 opacity-80">{guardian.killSwitchReason}</span>}
+              {guardian?.killSwitchTriggeredAt && (
+                <span className="ml-2 text-xs opacity-70">
+                  {new Date(guardian.killSwitchTriggeredAt).toLocaleTimeString()}
+                </span>
+              )}
             </AlertDescription>
           </Alert>
         )}
@@ -158,13 +220,15 @@ export default function Dashboard() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Command Center</h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              {summary ? `Last updated ${new Date(summary.lastUpdated).toLocaleTimeString()}` : "Loading..."}
+              {summaryError ? "Unable to reach API server" : summary ? `Last updated ${new Date(summary.lastUpdated).toLocaleTimeString()}` : "Loading..."}
             </p>
           </div>
           <div className="flex items-center gap-3">
             <div className="text-right">
               <div className="text-xs text-muted-foreground uppercase tracking-widest">System</div>
-              {summary ? (
+              {summaryError ? (
+                <span className="text-xs text-red-400 font-medium">Disconnected</span>
+              ) : summary ? (
                 <StatusBadge status={summary.systemStatus} />
               ) : (
                 <Skeleton className="h-5 w-24" />
@@ -197,8 +261,9 @@ export default function Dashboard() {
                   <AlertDialogAction
                     onClick={() => handleKillSwitch(!summary?.killSwitchActive)}
                     className={summary?.killSwitchActive ? "" : "bg-destructive hover:bg-destructive/90"}
+                    disabled={killSwitchMutation.isPending}
                   >
-                    {summary?.killSwitchActive ? "Deactivate" : "Activate Kill Switch"}
+                    {killSwitchMutation.isPending ? "Processing..." : summary?.killSwitchActive ? "Deactivate" : "Activate Kill Switch"}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -395,7 +460,11 @@ export default function Dashboard() {
               <CardTitle className="text-base">Open Positions</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              {positions?.data.length === 0 ? (
+              {positionsError ? (
+                <div className="p-6 text-center text-sm text-red-400 flex items-center justify-center gap-2">
+                  <XCircle className="h-4 w-4" /> Unavailable — cannot reach positions endpoint
+                </div>
+              ) : positions?.data.length === 0 ? (
                 <div className="p-6 text-center text-muted-foreground text-sm">No open positions</div>
               ) : (
                 <Table>
@@ -438,7 +507,11 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {guardian ? (
+              {guardianError ? (
+                <div className="flex items-center gap-2 text-sm text-red-400 py-4">
+                  <XCircle className="h-4 w-4" /> Guardian state unavailable
+                </div>
+              ) : guardian ? (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm mb-4">
                     <span className="text-muted-foreground">Uptime</span>

@@ -100,6 +100,30 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   });
 });
 
+router.post("/auth/complete-onboarding", async (req, res): Promise<void> => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    res.status(401).json({ error: "Unauthorized", message: "Not authenticated" });
+    return;
+  }
+  const token = authHeader.slice(7);
+  const [session] = await db.select().from(sessionsTable).where(eq(sessionsTable.token, token));
+  if (!session || session.expiresAt < new Date()) {
+    res.status(401).json({ error: "Unauthorized", message: "Session expired" });
+    return;
+  }
+  await db.update(usersTable).set({ onboardingCompleted: true }).where(eq(usersTable.id, session.userId));
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId));
+  res.json({
+    id: String(user.id),
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    onboardingCompleted: user.onboardingCompleted,
+    createdAt: user.createdAt.toISOString(),
+  });
+});
+
 router.post("/auth/logout", async (req, res): Promise<void> => {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith("Bearer ")) {

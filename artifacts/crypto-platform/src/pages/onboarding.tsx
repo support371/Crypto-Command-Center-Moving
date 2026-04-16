@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useUpdateSettings, getGetMeQueryKey } from "@workspace/api-client-react";
+import { getGetMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { getToken } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Activity, Shield, Zap, ChevronRight, CheckCircle, AlertTriangle } from "lucide-react";
 
@@ -125,21 +126,34 @@ const steps = [
 
 export default function Onboarding() {
   const [step, setStep] = useState(1);
+  const [completing, setCompleting] = useState(false);
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
-  const updateSettings = useUpdateSettings();
 
   const currentStep = steps.find(s => s.id === step) || steps[0];
   const isLastStep = step === steps.length;
 
   const handleNext = async () => {
     if (isLastStep) {
+      setCompleting(true);
       try {
-        // Mark onboarding complete by updating settings (a proxy for onboarding)
-        await updateSettings.mutateAsync({ data: { theme: "dark" } });
-        // Update the user in query cache
-        queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
-      } catch {}
+        const token = getToken();
+        const response = await fetch("/api/auth/complete-onboarding", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        if (response.ok) {
+          const updatedUser = await response.json();
+          queryClient.setQueryData(getGetMeQueryKey(), updatedUser);
+        }
+      } catch (err) {
+        console.error("Failed to complete onboarding:", err);
+      } finally {
+        setCompleting(false);
+      }
       setLocation("/dashboard");
     } else {
       setStep(s => s + 1);
@@ -201,8 +215,8 @@ export default function Onboarding() {
             >
               Back
             </Button>
-            <Button onClick={handleNext} disabled={updateSettings.isPending}>
-              {isLastStep ? "Enter Dashboard" : "Continue"}
+            <Button onClick={handleNext} disabled={completing}>
+              {completing ? "Saving..." : isLastStep ? "Enter Dashboard" : "Continue"}
               <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
