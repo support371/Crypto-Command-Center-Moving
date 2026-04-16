@@ -23,13 +23,13 @@ function LevelBadge({ level }: { level: string }) {
 }
 
 export default function LogsPage() {
-  const [levelFilter, setLevelFilter] = useState("");
-  const [sourceFilter, setSourceFilter] = useState("");
+  const [levelFilter, setLevelFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
   const [search, setSearch] = useState("");
 
   const { data: logs, isLoading } = useGetSystemLogs({
-    level: levelFilter as "debug" | "info" | "warn" | "error" | undefined || undefined,
-    source: sourceFilter || undefined,
+    level: levelFilter === "all" ? undefined : levelFilter as "debug" | "info" | "warn" | "error",
+    source: sourceFilter === "all" ? undefined : sourceFilter,
   });
 
   const filtered = logs?.data.filter((log) =>
@@ -60,7 +60,7 @@ export default function LogsPage() {
               <SelectValue placeholder="All Levels" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Levels</SelectItem>
+              <SelectItem value="all">All Levels</SelectItem>
               <SelectItem value="debug">Debug</SelectItem>
               <SelectItem value="info">Info</SelectItem>
               <SelectItem value="warn">Warn</SelectItem>
@@ -72,7 +72,7 @@ export default function LogsPage() {
               <SelectValue placeholder="All Sources" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Sources</SelectItem>
+              <SelectItem value="all">All Sources</SelectItem>
               <SelectItem value="routing-engine">routing-engine</SelectItem>
               <SelectItem value="guardian">guardian</SelectItem>
               <SelectItem value="risk-monitor">risk-monitor</SelectItem>

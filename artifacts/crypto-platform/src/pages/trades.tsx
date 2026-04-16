@@ -26,8 +26,8 @@ function PnlCell({ value }: { value: number | null }) {
 }
 
 export default function Trades() {
-  const [exchangeFilter, setExchangeFilter] = useState("");
-  const { data: trades, isLoading } = useGetTrades({ exchange: exchangeFilter || undefined });
+  const [exchangeFilter, setExchangeFilter] = useState("all");
+  const { data: trades, isLoading } = useGetTrades({ exchange: exchangeFilter === "all" ? undefined : exchangeFilter });
   const { data: stats } = useGetTradesStats();
 
   return (
@@ -82,7 +82,7 @@ export default function Trades() {
                 <SelectValue placeholder="All Exchanges" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Exchanges</SelectItem>
+                <SelectItem value="all">All Exchanges</SelectItem>
                 <SelectItem value="BTCC">BTCC</SelectItem>
                 <SelectItem value="Bitget">Bitget</SelectItem>
               </SelectContent>
