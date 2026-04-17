@@ -2,7 +2,7 @@ import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useGetMe } from "@workspace/api-client-react";
+import { getGetMeQueryKey, useGetMe } from "@workspace/api-client-react";
 
 import Landing from "@/pages/landing";
 import Login from "@/pages/login";
@@ -39,21 +39,27 @@ function NotFound() {
 }
 
 function ProtectedLogin() {
-  const { data: user, isLoading } = useGetMe({ query: { retry: false } });
+  const { data: user, isLoading } = useGetMe({
+    query: { queryKey: getGetMeQueryKey(), retry: false },
+  });
   if (isLoading) return null;
   if (user) return <Redirect to="/dashboard" />;
   return <Login />;
 }
 
 function ProtectedRegister() {
-  const { data: user, isLoading } = useGetMe({ query: { retry: false } });
+  const { data: user, isLoading } = useGetMe({
+    query: { queryKey: getGetMeQueryKey(), retry: false },
+  });
   if (isLoading) return null;
   if (user) return <Redirect to="/dashboard" />;
   return <Register />;
 }
 
 function ProtectedLanding() {
-  const { data: user, isLoading } = useGetMe({ query: { retry: false } });
+  const { data: user, isLoading } = useGetMe({
+    query: { queryKey: getGetMeQueryKey(), retry: false },
+  });
   if (isLoading) return null;
   if (user) return <Redirect to="/dashboard" />;
   return <Landing />;

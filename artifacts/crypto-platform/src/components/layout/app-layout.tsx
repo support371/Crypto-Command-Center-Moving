@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Sidebar } from "./sidebar";
-import { useGetMe } from "@workspace/api-client-react";
+import { getGetMeQueryKey, useGetMe } from "@workspace/api-client-react";
 import { Redirect, useLocation } from "wouter";
 
 interface AppLayoutProps {
@@ -10,8 +10,9 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   const { data: user, isLoading, isError } = useGetMe({
     query: {
+      queryKey: getGetMeQueryKey(),
       retry: false,
-    }
+    },
   });
   const [location] = useLocation();
 

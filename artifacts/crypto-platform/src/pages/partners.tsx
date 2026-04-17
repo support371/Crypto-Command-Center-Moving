@@ -118,6 +118,10 @@ export default function Partners() {
             {exchanges?.map((exch) => {
               const roleInfo = roleLabels[exch.role] || roleLabels.execution;
               const notes = boundaryNotes[exch.id] || [];
+              const metadataDescription =
+                typeof exch.metadata?.description === "string"
+                  ? exch.metadata.description
+                  : undefined;
               return (
                 <Card key={exch.id} className={`border ${roleInfo.bg}`}>
                   <CardHeader>
@@ -139,7 +143,7 @@ export default function Partners() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                      {exch.metadata?.description || roleInfo.description}
+                      {metadataDescription || roleInfo.description}
                     </p>
 
                     {exch.role === "execution" && (
