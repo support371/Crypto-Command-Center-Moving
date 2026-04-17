@@ -3,12 +3,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build as esbuild } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
-import { rm } from "node:fs/promises";
+import { cp, rm } from "node:fs/promises";
 
 // Plugins (e.g. 'esbuild-plugin-pino') may use `require` to resolve dependencies
 globalThis.require = createRequire(import.meta.url);
 
 const artifactDir = path.dirname(fileURLToPath(import.meta.url));
+const dbRequire = createRequire(path.resolve(artifactDir, "../../lib/db/package.json"));
 
 async function buildAll() {
   const distDir = path.resolve(artifactDir, "dist");
@@ -118,6 +119,12 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     `,
     },
   });
+
+  const pgliteDistDir = path.dirname(dbRequire.resolve("@electric-sql/pglite"));
+  await Promise.all([
+    cp(path.join(pgliteDistDir, "pglite.data"), path.join(distDir, "pglite.data")),
+    cp(path.join(pgliteDistDir, "pglite.wasm"), path.join(distDir, "pglite.wasm")),
+  ]);
 }
 
 buildAll().catch((err) => {

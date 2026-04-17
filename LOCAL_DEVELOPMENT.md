@@ -3,7 +3,7 @@
 ## Windows-first quick start
 
 1. Copy `.env.example` to `.env`
-2. Update `DATABASE_URL` to a reachable Postgres instance
+2. Keep the default embedded database or update `DATABASE_URL` to a reachable Postgres instance
 3. Install dependencies with `pnpm install`
 4. Start the API:
    - `pnpm --filter @workspace/api-server run build`
@@ -15,6 +15,7 @@
 
 - The API start script loads `.env.local` or `.env` from the repo root or `artifacts/api-server`
 - API default port is `3001` when `PORT` is unset
+- API default database is embedded `pglite:memory://cryptocore` when `DATABASE_URL` is unset
 - Frontend default port is `4173`
 - Frontend dev requests to `/api/*` are proxied to `http://127.0.0.1:3001` unless `API_TARGET` is overridden
 
@@ -24,6 +25,7 @@
 - `pnpm run typecheck`
 - `pnpm run build`
 
-## Remaining runtime prerequisite
+## Demo login
 
-The API requires a real Postgres database. Without `DATABASE_URL`, the server will exit early with a clear message before boot.
+- Email: `demo@cryptocore.io`
+- Password: `demo1234`

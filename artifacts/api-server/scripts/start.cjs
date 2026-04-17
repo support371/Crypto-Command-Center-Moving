@@ -51,10 +51,10 @@ if (!process.env.PORT) {
 }
 
 if (!process.env.DATABASE_URL) {
-  console.error(
-    "DATABASE_URL is missing. Copy .env.example to .env and provide a Postgres connection string before starting the API.",
+  process.env.DATABASE_URL = "pglite:memory://cryptocore";
+  console.log(
+    `DATABASE_URL not set. Falling back to embedded development database at ${process.env.DATABASE_URL}.`,
   );
-  process.exit(1);
 }
 
 const child = spawn("node", ["--enable-source-maps", "./dist/index.mjs"], {
